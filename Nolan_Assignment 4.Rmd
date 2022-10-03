@@ -1,0 +1,79 @@
+---
+title: "Nolan_Assignment 4"
+output: html_document
+date: "2022-10-03"
+---
+
+
+1. import packages
+```{r}
+library(tidyr)
+library(dplyr,warn.conflicts = FALSE)
+options(dplyr.summarise.inform = FALSE)
+library(stringr)
+library(ggplot2)
+
+```
+
+2. create csv in excel and add to github
+
+3. import csv from github
+```{r}
+mydata <- read.csv("https://raw.githubusercontent.com/arinolan/assignment-4/main/airline%20data.csv")
+mydata[2,1] <- mydata[1,1]
+mydata[5,1] <- mydata[4,1]
+mydata[,2] <- sapply(mydata[,2], str_replace, " ", ".")
+mydata
+```
+
+4. clean data
+```{r}
+clean_mydata <- mydata %>%
+  na.omit() %>%
+  rename(airline = X, status = X.1) %>%
+  gather("dest.city", "n", 3:7) %>%
+  spread(status, "n") %>%
+  mutate(total.arrivals = delayed + on.time, on.time.percent.rate = on.time/total.arrivals*100) %>%
+  arrange(desc(total.arrivals))
+
+clean_mydata[,2] <- sapply(clean_mydata[,2], str_replace, "\\.", " ")
+clean_mydata
+```
+
+5. airline activity 
+
+best and worst arrival by destination
+```{r}
+best_dest <- clean_mydata %>% 
+  filter(on.time.percent.rate == max(on.time.percent.rate))
+best_dest
+
+worst_dest <- clean_mydata %>%
+  filter(on.time.percent.rate == min(on.time.percent.rate))
+worst_dest
+```
+
+most and least timely arrival
+```{r}
+timely <- clean_mydata %>% 
+  group_by(airline) %>% 
+  summarise(on.time.airline.perecent.rate = sum(on.time) / sum(total.arrivals)*100) %>% 
+  filter(on.time.airline.perecent.rate == max(on.time.airline.perecent.rate))
+timely
+
+least_timely <- clean_mydata %>% 
+  group_by(airline) %>% 
+  summarise(on.time.airline.perecent.rate = sum(on.time) / sum(total.arrivals)*100) %>% 
+  filter(on.time.airline.perecent.rate == min(on.time.airline.perecent.rate))
+least_timely
+```
+
+highest to lowest rank
+```{r}
+ranked <- clean_mydata %>% 
+  group_by(dest.city) %>% 
+  summarise(on.time.city.percent.rate = sum(on.time) / sum(total.arrivals)*100) %>% 
+  mutate(ranking.on.time = min_rank(desc(on.time.city.percent.rate))) %>% 
+  arrange(ranking.on.time)
+ranked
+```
